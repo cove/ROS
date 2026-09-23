@@ -19,6 +19,11 @@ from zoneinfo import ZoneInfo
 
 BASE = "https://maps.assessor.lacounty.gov/GeoCortex/Essentials/PAIS/REST/sites/PAIS/Resources"
 MAP_ID = "5841-018-"
+WATCHED_PARCELS = {
+    "438 E Poppyfields Dr": ("5841-018-006",),
+    "446 E Poppyfields Dr": ("5841-018-004", "5841-018-005"),
+    "454 E Poppyfields Dr": ("5841-018-003",),
+}
 NAVIGATOR_URL = f"{BASE}/ParcelMapNavigator?{urlencode({'f': 'json', 'MapId': MAP_ID})}"
 PDF_URL = f"{BASE}/ParcelMap?{urlencode({'f': 'file', 'MapId': MAP_ID})}"
 BASELINE_SHA256 = "e0c88d50bd8dba318b5eff3bacd812c783bd2ad574d0e9f52b58edfc9d07ce46"
@@ -68,12 +73,13 @@ def check():
         "status": "verified_unchanged" if digest == BASELINE_SHA256 else "review_required",
         "checked_at": datetime.now(PACIFIC).isoformat(timespec="seconds"),
         "map_id": MAP_ID,
+        "watched_parcels": WATCHED_PARCELS,
         "source_url": PDF_URL,
         "navigator_url": NAVIGATOR_URL,
         "sha256": digest,
         "baseline_sha256": BASELINE_SHA256,
         "pdf_path": pdf_path,
-        "baseline_observation": "The visually checked baseline scan shows 14.07 by the 446 strip and 50.72 and 65.93 near 454; checksum change alone does not establish that the requested correction was published.",
+        "baseline_observation": "The visually checked baseline scan shows 438 as parcel 6 in Lot 74, 14.07 by the 446 strip, and 50.72 and 65.93 near 454; a checksum change alone does not establish that the requested correction was published.",
     }
 
 

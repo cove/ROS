@@ -63,3 +63,5 @@ jobs:
           cat poppyfields-result.json >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
+
+# trigger: 2026-10-01 rerun

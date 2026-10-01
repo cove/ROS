@@ -2,6 +2,10 @@ name: Poppyfields Watch
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'poppyfields_watch.py'
+      - '.github/workflows/poppyfields-watch.yml'
 
 jobs:
   check:

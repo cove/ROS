@@ -146,10 +146,12 @@ def check_permit():
             or activities.get("Success") is not True or not isinstance(steps, list)):
         raise LookupFailure(f"Invalid permit identity or workflow response: {record.get('ErrorMessage')!r}; {activities.get('ErrorMessage')!r}")
     reviews = [{"name": s.get("Name"), "status_code": s.get("Status"),
-                "status_name": s.get("ActivityStatusName"), "completed_on": s.get("CompletedOn")}
+                "status_name": s.get("ActivityStatusName"), "completed_on": s.get("CompletedOn"),
+                "raw": s}
                for s in steps if s.get("Name") == "Permit Plan Review - Rebuild"]
     clearances = [{"name": s.get("Name"), "status_code": s.get("Status"),
-                   "status_name": s.get("ActivityStatusName"), "completed_on": s.get("CompletedOn")}
+                   "status_name": s.get("ActivityStatusName"), "completed_on": s.get("CompletedOn"),
+                   "raw": s}
                   for s in steps if s.get("Name") == "Permit Plan Clearances - Rebuild"]
     if not reviews or not clearances or not isinstance(item.get("PermitStatus"), str):
         raise LookupFailure("Permit workflow is missing required plan review or clearance steps")

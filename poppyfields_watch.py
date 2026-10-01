@@ -123,6 +123,39 @@ def check_map():
             "baseline_observation": "438 is parcel 6 in Lot 74; the baseline shows 14.07 by the 446 strip and 50.72/65.93 by 454. A changed checksum requires visual review."}
 
 
+def county_comment_checksum(*payloads):
+    """Hash human-readable County note/comment fields without emitting their text."""
+    comment_keys = ("comment", "comments", "note", "notes", "remark", "remarks",
+                    "correction", "corrections", "response", "responses",
+                    "description", "disposition", "resubmittal", "resubmission")
+    found = []
+
+    def walk(value, path=""):
+        if isinstance(value, dict):
+            for key, child in value.items():
+                key_text = str(key)
+                child_path = f"{path}.{key_text}" if path else key_text
+                if any(token in key_text.lower() for token in comment_keys):
+                    if isinstance(child, str) and child.strip():
+                        found.append((child_path, " ".join(child.split())))
+                    elif isinstance(child, (list, dict)):
+                        walk(child, child_path)
+                else:
+                    walk(child, child_path)
+        elif isinstance(value, list):
+            for idx, child in enumerate(value):
+                walk(child, f"{path}[{idx}]")
+
+    for payload in payloads:
+        walk(payload)
+
+    canonical = json.dumps(found, ensure_ascii=False, separators=(",", ":"))
+    return {
+        "count": len(found),
+        "sha256": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+    }
+
+
 def check_permit():
     tenants_url = f"{PERMIT_BASE}/Home/GetTenants"
     tenant_response = county_json(tenants_url)
@@ -146,12 +179,10 @@ def check_permit():
             or activities.get("Success") is not True or not isinstance(steps, list)):
         raise LookupFailure(f"Invalid permit identity or workflow response: {record.get('ErrorMessage')!r}; {activities.get('ErrorMessage')!r}")
     reviews = [{"name": s.get("Name"), "status_code": s.get("Status"),
-                "status_name": s.get("ActivityStatusName"), "completed_on": s.get("CompletedOn"),
-                "raw": s}
+                "status_name": s.get("ActivityStatusName"), "completed_on": s.get("CompletedOn")}
                for s in steps if s.get("Name") == "Permit Plan Review - Rebuild"]
     clearances = [{"name": s.get("Name"), "status_code": s.get("Status"),
-                   "status_name": s.get("ActivityStatusName"), "completed_on": s.get("CompletedOn"),
-                   "raw": s}
+                   "status_name": s.get("ActivityStatusName"), "completed_on": s.get("CompletedOn")}
                   for s in steps if s.get("Name") == "Permit Plan Clearances - Rebuild"]
     if not reviews or not clearances or not isinstance(item.get("PermitStatus"), str):
         raise LookupFailure("Permit workflow is missing required plan review or clearance steps")
@@ -162,6 +193,7 @@ def check_permit():
             "plan_review_activities": reviews, "clearance_activities": clearances,
             "plan_review_passed": any(s.get("status_name") in ("Passed", "Approved") for s in reviews),
             "clearances_finished": all(s.get("completed_on") for s in clearances),
+            "county_comments": county_comment_checksum(record, activities),
             "viewer": PERMIT_VIEWER, "record_url": record_url, "activity_url": activity_url}
 
 
